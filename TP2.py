@@ -1,5 +1,5 @@
 
-import libropsa
+import librosa
 import librosa.display
 import librosa.beat
 import sounddevice as sd
@@ -9,8 +9,6 @@ import matplotlib.pyplot as plt
 import scipy.stats as st
 from scipy import spatial
 
-
-show = False
 
 
 def stats(feature):
@@ -41,30 +39,27 @@ def normalizar(arr):
     return arr_normalizado
 
 
-def ex2():
+def ex2(print):
     # 2.1
     #2.1.1
     top100_features = np.genfromtxt("Features - Audio MER/top100_features.csv", dtype = np.str, delimiter=",")
     fNames = top100_features[1:, 0]
     top100_features = top100_features[1::, 1:(len(top100_features[0])-1)].astype(np.float)
     
-    if show:
+    if print == True:
         print(top100_features)
     
     #2.1.2
     top100_features_norm = normalizar(top100_features)
         
-    if show:
+    if print == True:
         print(top100_features_norm)
    
     
-    #2.1.3
-    #linhas = musicas, colunas = val das features
+    #2.1.3 
     np.savetxt("Features - Results/top100_features_normalized.csv", top100_features_norm, fmt = "%lf", delimiter= ",");
     
-    #2.2 - Extrair features da framework librosa
-    #2.2.1 - Para os 900 ficheiros da BD, extrair as seguintes features:
-    #--- Load file
+    #2.2.1
     sr = 22050
     mono = True
     warnings.filterwarnings("ignore")
@@ -80,9 +75,8 @@ def ex2():
         
         y, fs = librosa.load(fName, sr=sr, mono = mono)
         
-        #Features Espectrais
-        #2.2.2 - Calcular as 7 estatísticas típicas sobre as features anteriores
-        
+        #2.2.2
+        # espectrais
         mfcc = librosa.feature.mfcc(y=y,n_mfcc=13)
         features[line][0] = mfcc
         for i in range(mfcc.shape[0]):
@@ -109,7 +103,7 @@ def ex2():
         features[line][5] = spectral_rolloff
         stats[line, 161 : 161+7] = stats(spectral_rolloff)
         
-        #Features Temporais
+        # temporais
         f0 = librosa.yin(y=y, fmin=20, fmax=fs/2)
         f0[f0==fs/2]=0
         features[line][6] = f0
@@ -123,22 +117,22 @@ def ex2():
         features[line][8] = zero_cross
         stats[line, 182 : 182+7] = stats(zero_cross)
         
-        #Outras features
+        # outras
         time = librosa.beat.tempo(y=y)
         stats[line, 189] = features[line][9] = time[0]
     
         line += 1
 
-    if show:
+    if print == True:
         print(stats)
     
     stats_normalizadas = normalizar(stats)
     
     np.savetxt("Features - Results/features_stats.csv", stats_normalizadas, fmt = "%lf", delimiter= ",");
     
-    if show:
+    if print == True:
         print(stats_normalizadas)
         
 
-if __name__ == "__main__":   
-    ex2()
+if __name__ == "__main__":
+    ex2(True)
