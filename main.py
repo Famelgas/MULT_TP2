@@ -169,25 +169,39 @@ def metricas():
 
     # count = 0
 
-    for i in range(900):
+    # É simétrica e diagonal é 0
 
-        # count += 1
+    euclidiana = np.linalg.norm(
+        normalized[:, None] - normalized, axis=2)
+    manhattan = np.abs(normalized[:, None] - normalized).sum(axis=2)
+    cosseno = 1 - np.dot(normalized, normalized.T) / (np.linalg.norm(
+        normalized, axis=1)[:, None] * np.linalg.norm(normalized, axis=1))
 
-        # print(count)
+    euclidiana_features = np.linalg.norm(
+        statistics[:, None] - statistics, axis=2)
+    manhattan_features = np.abs(statistics[:, None] - statistics).sum(axis=2)
+    cosseno_features = 1 - np.dot(statistics, statistics.T) / (np.linalg.norm(
+        statistics, axis=1)[:, None] * np.linalg.norm(statistics, axis=1))
 
-        for j in range(900):
+    # for i in range(900):
 
-            euclidiana[i][j] = np.linalg.norm(normalized[i] - normalized[j])
-            manhattan[i][j] = np.linalg.norm(normalized[i] - normalized[j])
-            cosseno[i][j] = spatial.distance.cosine(
-                normalized[i], normalized[j])
+    #     # count += 1
 
-            euclidiana_features[i][j] = np.linalg.norm(
-                statistics[i] - statistics[j])
-            manhattan_features[i][j] = np.linalg.norm(
-                statistics[i] - statistics[j])
-            cosseno_features[i][j] = spatial.distance.cosine(
-                statistics[i], statistics[j])
+    #     # print(count)
+
+    #     for j in range(900):
+
+    #         euclidiana[i][j] = np.linalg.norm(normalized[i] - normalized[j])
+    #         manhattan[i][j] = np.linalg.norm(normalized[i] - normalized[j])
+    #         cosseno[i][j] = spatial.distance.cosine(
+    #             normalized[i], normalized[j])
+
+    #         euclidiana_features[i][j] = np.linalg.norm(
+    #             statistics[i] - statistics[j])
+    #         manhattan_features[i][j] = np.linalg.norm(
+    #             statistics[i] - statistics[j])
+    #         cosseno_features[i][j] = spatial.distance.cosine(
+    #             statistics[i], statistics[j])
 
     print("3.1 -> ✅")
 
@@ -326,28 +340,32 @@ def similaridade():
         print("\n")
 
 
-def ranking_metadata(names, nome_ficheiro, list):
+def ranking_metadata(names, nome_ficheiro, score):
 
-    for metric in list:
+    # Usar o score e é inversa
 
-        position = np.where(names == nome_ficheiro)[0][0]
+    position = np.where(names == nome_ficheiro)[0][0]
 
-        ranking = np.argsort(metric[position, :])
+    ranking = score[position, :].argsort()[::-1]
 
-        rank = 0
+    ranking_v2 = np.zeros(20)
 
-        for elem in ranking:
+    rank = 0
 
-            if (names[elem] != nome_ficheiro):
+    for elem in ranking:
 
-                # print(rank, "-> ", names[elem] + ".mp3")
+        if (names[elem] != nome_ficheiro):
 
-                rank += 1
+            print(rank + 1, "-> ", names[elem] + ".mp3")
 
-            if elem == 20:
-                break
+            ranking_v2[rank] = elem
 
-    return ranking
+            rank += 1
+
+        if rank == 20:
+            break
+
+    return ranking_v2
 
 
 def metrica_precisa(ranking, rank_metadata):
@@ -389,28 +407,38 @@ def count_Score():
 
             result = 0
 
-            if ((metadados[i][1].replace("\"", "") == metadados[j][1].replace("\"", "")) or (metadados[i][3].replace("\"", "") == metadados[j][3].replace("\"", ""))):
+            if (metadados[i][1].replace("\"", "") == metadados[j][1].replace("\"", "")):
                 result += 1
 
-            for k in range(len(metadados[i][9].replace("\"", "").split("; "))):
+            if (metadados[i][3].replace("\"", "") == metadados[j][3].replace("\"", "")):
+                result += 1
 
-                if metadados[i][9].replace("\"", "").split("; ")[k] in metadados[j][9].replace("\"", "").split("; "):
+            aux_i = metadados[i][9].replace("\"", "").split("; ")
+            aux_j = metadados[j][9].replace("\"", "").split("; ")
+
+            for k in range(len(aux_i)):
+
+                if aux_i[k] in aux_j:
                     result += 1
 
-            for k in range(len(metadados[i][11].replace("\"", "").split("; "))):
+            aux_i = metadados[i][11].replace("\"", "").split("; ")
+            aux_j = metadados[j][11].replace("\"", "").split("; ")
 
-                if metadados[i][11].replace("\"", "").split("; ")[k] in metadados[j][11].replace("\"", "").split("; "):
+            for k in range(len(aux_i)):
+
+                if aux_i[k] in aux_j:
                     result += 1
 
             score[i][j] = result
+            score[j][i] = result
 
     # Add 1 to the diagonal
-    np.fill_diagonal(score, 1)
+    # np.fill_diagonal(score, -1)
 
     print("4.1 -> ✅")
 
     # ============================ 4.2 ============================
-    np.savetxt("Features\\score.csv", score, fmt="%lf", delimiter=",")
+    np.savetxt("Features\\score.csv", score, fmt="%d", delimiter=",")
     print("4.2 -> ✅")
 
     return score
@@ -424,6 +452,8 @@ def read_score():
 
 
 def metadata():
+
+    # ============================ 4.1 e 4.2 ============================
 
     euclidiana, manhattan, cosseno, euclidiana_features, manhattan_features, cosseno_features, names = read()
 
@@ -442,7 +472,9 @@ def metadata():
         print("================== FICHEIRO -> ",
               nome_ficheiro, " ==================\n")
 
-        rank_metadata = ranking_metadata(names, nome_ficheiro, list)
+        rank_metadata = ranking_metadata(names, nome_ficheiro, score)
+
+        print("Ranking Metadata: ", rank_metadata, "\n")
 
         for metric, nome in zip(list, nomes_lista):
 
@@ -451,8 +483,7 @@ def metadata():
 
             ranking = ranking_similaridadeV2(names, nome_ficheiro, metric)
 
-            print(metrica_precisa(ranking, rank_metadata))
-
+            print(len(np.intersect1d(ranking, rank_metadata)) / 20)
     print("\n")
 
     print("4.3 -> ✅")
@@ -472,7 +503,7 @@ def main():
     # euclidiana, manhattan, cosseno, euclidiana_features, manhattan_features, cosseno_features = metricas()
 
     # ============================ 3.3 ============================
-    # euclidiana, manhattan, cosseno, euclidiana_features, manhattan_features, cosseno_features, names = similaridade()
+    # similaridade()
 
     # =============================================== 4 ===============================================
     metadata()
